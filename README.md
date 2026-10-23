@@ -48,3 +48,11 @@ then reports a wrong password and NetworkManager gives up for good.
   It reads the two profile names from `~/wifi-watch/wifi-recover.conf` on the printer
   (`PINNED=<profile>` and `FALLBACK=<profile>-any`), which is deliberately not in this repo.
   Its header has the removal steps. It logs `RECOVER` lines to `printer_data/logs/wifi-watch.log`.
+
+## License
+
+Everything here is MIT (see `LICENSE`) except `klipperscreen/`. That folder modifies
+[KlipperScreen](https://github.com/KlipperScreen/KlipperScreen), which is licensed under the GNU
+Affero General Public License v3.0, so `screen.py.patch` and `ks_includes/notifications.py` are
+distributed under AGPL-3.0 too. `klipperscreen/LICENSE` is a copy of
+[KlipperScreen's license](https://github.com/KlipperScreen/KlipperScreen/blob/master/LICENSE).
