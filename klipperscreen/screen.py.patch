@@ -1,0 +1,86 @@
+--- a/screen.py
++++ b/screen.py
+@@ -25,6 +25,7 @@
+ from ks_includes.printer import Printer
+ from ks_includes.widgets.keyboard import Keyboard
+ from ks_includes.config import KlipperScreenConfig
++from ks_includes.notifications import Notifications
+ from panels.base_panel import BasePanel
+ 
+ logging.getLogger("urllib3").setLevel(logging.WARNING)
+@@ -80,7 +81,6 @@
+     keyboard = None
+     load_panel = {}
+     panels = {}
+-    popup_message = None
+     screensaver = None
+     printers = printer = None
+     subscriptions = []
+@@ -90,7 +90,6 @@
+     reinit_count = 0
+     max_retries = 4
+     initialized = False
+-    popup_timeout = None
+ 
+     def __init__(self, args, version):
+         try:
+@@ -133,6 +132,7 @@
+         self.set_icon_from_file(os.path.join(klipperscreendir, "styles", "icon.svg"))
+ 
+         self.base_panel = BasePanel(self, title="Base Panel")
++        self.notifications = Notifications(self)
+         self.add(self.base_panel.main_grid)
+         self.show_all()
+         if self.show_cursor:
+@@ -307,48 +307,12 @@
+         self.show_all()
+ 
+     def show_popup_message(self, message, level=3):
+-        self.close_screensaver()
+-        if self.popup_message is not None:
+-            self.close_popup_message()
+-
+-        msg = Gtk.Button(label=f"{message}")
+-        msg.set_hexpand(True)
+-        msg.set_vexpand(True)
+-        msg.get_child().set_line_wrap(True)
+-        msg.get_child().set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+-        msg.get_child().set_max_width_chars(40)
+-        msg.connect("clicked", self.close_popup_message)
+-        msg.get_style_context().add_class("message_popup")
+-        if level == 1:
+-            msg.get_style_context().add_class("message_popup_echo")
+-        elif level == 2:
+-            msg.get_style_context().add_class("message_popup_warning")
+-        else:
+-            msg.get_style_context().add_class("message_popup_error")
+-
+-        popup = Gtk.Popover.new(self.base_panel.titlebar)
+-        popup.get_style_context().add_class("message_popup_popover")
+-        popup.set_size_request(self.width * .9, -1)
+-        popup.set_halign(Gtk.Align.CENTER)
+-        popup.add(msg)
+-        popup.popup()
+-
+-        self.popup_message = popup
+-        self.popup_message.show_all()
+-
+-        if self._config.get_main_config().getboolean('autoclose_popups', True):
+-            if self.popup_timeout:
+-                GLib.source_remove(self.popup_timeout)
+-            self.popup_timeout = GLib.timeout_add_seconds(10, self.close_popup_message)
+-
++        # Coalescing, rate-limited, non-modal toast; see ks_includes/notifications.py
++        self.notifications.notify(message, level)
+         return False
+ 
+     def close_popup_message(self, widget=None):
+-        if self.popup_message is None:
+-            return
+-        self.popup_message.popdown()
+-        GLib.source_remove(self.popup_timeout)
+-        self.popup_message = self.popup_timeout = None
++        self.notifications.close(widget)
+ 
+     def show_error_modal(self, err, e=""):
+         logging.error(f"Showing error modal: {err} {e}")
